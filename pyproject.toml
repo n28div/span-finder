@@ -22,16 +22,21 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Text Processing :: Linguistic",
 ]
-requires-python = ">=3.14"
+requires-python = ">=3.8"
 dependencies = [
-    "torch>=2.9.1",
-    "transformers>=4.45.0",
-    "numpy>=2.0.0",
-    "spacy>=3.8.0",
+    "torch>=1.10.0",
+    "transformers>=4.20.0",
+    "numpy>=1.20.0",
+    "spacy>=3.0.0",
     "tqdm",
 ]
 
@@ -88,11 +93,11 @@ packages = [
 
 [tool.black]
 line-length = 100
-target-version = ["py314"]
+target-version = ["py38", "py39", "py310", "py311", "py312"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py314"
+target-version = "py38"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]

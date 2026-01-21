@@ -4,8 +4,8 @@ Parse sentences by finding & labeling spans.
 
 ## Requirements
 
-- Python 3.14+
-- PyTorch 2.9.1+
+- Python 3.8+
+- PyTorch 1.10+
 
 ## Installation
 
@@ -32,11 +32,11 @@ pip install -e ".[all]"
 ### Install with GPU support (conda)
 
 ```shell
-conda create -n spanfinder python=3.14
+conda create -n spanfinder python=3.10
 conda activate spanfinder
 
-# Install PyTorch with CUDA support first
-pip install torch>=2.9.1 --index-url https://download.pytorch.org/whl/cu124
+# Install PyTorch with CUDA support first (adjust CUDA version as needed)
+pip install torch --index-url https://download.pytorch.org/whl/cu118
 
 # Then install span-finder
 pip install span-finder
@@ -257,7 +257,7 @@ For training documentation, refer to:
 - [Training guide](docs/training.md)
 
 **Inference vs Training:**
-- **Inference** (default): Works with PyTorch 2.9.1+ and Python 3.14+. Just `pip install span-finder`.
+- **Inference** (default): Works with Python 3.8+ and PyTorch 1.10+. Just `pip install span-finder`.
 - **Training**: Requires AllenNLP with PyTorch < 1.13. Use `pip install "span-finder[training]"` in a compatible environment.
 
 ## Citation

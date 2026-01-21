@@ -1,11 +1,9 @@
-# Core dependencies for Python 3.14 and PyTorch 2.9.1
-torch>=2.9.1
-transformers>=4.45.0
-numpy>=2.0.0
-pandas>=2.2.0
+# Core dependencies for Python 3.8+ and PyTorch 1.10+
+torch>=1.10.0
+transformers>=4.20.0
+numpy>=1.20.0
 tqdm
-scipy>=1.14.0
-spacy>=3.8.0
+spacy>=3.0.0
 
 # Optional: for training (requires AllenNLP with older PyTorch)
 # allennlp>=2.10.1

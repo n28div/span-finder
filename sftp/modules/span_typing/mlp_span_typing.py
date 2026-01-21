@@ -14,10 +14,10 @@ class MLPSpanTyping(SpanTyping):
     def __init__(
             self,
             input_dim: int,
-            hidden_dims: list[int],
+            hidden_dims: List[int],
             label_emb: torch.nn.Embedding,
             n_category: int,
-            label_to_ignore: list[int] | None = None
+            label_to_ignore: Optional[List[int]] = None
     ):
         """
         :param input_dim: dim(parent_span) + dim(child_span) + dim(label_dim)
@@ -40,9 +40,9 @@ class MLPSpanTyping(SpanTyping):
             self,
             span_vec: torch.Tensor,
             parent_at_span: torch.Tensor,
-            span_labels: torch.Tensor | None,
+            span_labels: Optional[torch.Tensor],
             prediction_only: bool = False,
-    ) -> dict[str, torch.Tensor]:
+    ) -> Dict[str, torch.Tensor]:
         """
         Inputs: All features for typing a child span.
         Process: Update the metric.

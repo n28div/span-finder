@@ -3,7 +3,7 @@ Simple predictor for SpanFinder models that doesn't require AllenNLP.
 """
 
 from dataclasses import dataclass
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 from transformers import AutoTokenizer
@@ -21,7 +21,7 @@ class PredictionResult:
     """Result of a prediction."""
     span: Span
     sentence: List[str]
-    meta: dict
+    meta: Dict
 
 
 class SimplePredictor:
@@ -36,7 +36,7 @@ class SimplePredictor:
         self,
         model: SpanFinderModel,
         vocab: Vocabulary,
-        config: dict,
+        config: Dict,
         device: str = "cpu",
     ):
         self.model = model
@@ -56,7 +56,7 @@ class SimplePredictor:
         try:
             import spacy
             self.nlp = spacy.load("en_core_web_sm")
-        except:
+        except (ImportError, OSError):
             self.nlp = None
 
         # Get special indices
@@ -93,7 +93,7 @@ class SimplePredictor:
                 return sentence.split()
         return sentence
 
-    def _prepare_input(self, tokens: List[str]) -> tuple:
+    def _prepare_input(self, tokens: List[str]) -> Tuple:
         """Prepare input for the model."""
         # Use transformer tokenizer with word-level tokenization tracking
         encoding = self.tokenizer(
@@ -178,8 +178,8 @@ class SimplePredictor:
         self,
         token_vec: torch.Tensor,
         attention_mask: torch.Tensor,
-        offsets: List[tuple],
-    ) -> List[dict]:
+        offsets: List[Tuple],
+    ) -> List[Dict]:
         """
         Iteratively decode spans from token representations.
 
@@ -303,7 +303,7 @@ class SimplePredictor:
 
         return spans
 
-    def _bio_to_spans(self, bio_tags: List[int], offsets: List[tuple]) -> List[tuple]:
+    def _bio_to_spans(self, bio_tags: List[int], offsets: List[Tuple]) -> List[Tuple]:
         """Convert BIO tag sequence to span boundaries."""
         spans = []
         current_start = None
@@ -334,7 +334,7 @@ class SimplePredictor:
 
         return valid_spans
 
-    def _build_span_tree(self, spans: List[dict], tokens: List[str]) -> Span:
+    def _build_span_tree(self, spans: List[Dict], tokens: List[str]) -> Span:
         """Build a Span tree from flat span list."""
         # Create Span objects
         span_objects = []

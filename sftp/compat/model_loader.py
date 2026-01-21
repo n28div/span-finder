@@ -10,7 +10,7 @@ import os
 import shutil
 import tarfile
 import tempfile
-from typing import Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 import torch
@@ -32,7 +32,7 @@ def load_archive(
     archive_path: str,
     device: str = "cpu",
     weights_file: Optional[str] = None,
-) -> Tuple["SpanFinderModel", Vocabulary, dict]:
+) -> Tuple["SpanFinderModel", Vocabulary, Dict]:
     """
     Load a SpanFinder model from an AllenNLP archive.
 
@@ -216,7 +216,7 @@ class SpanFinderModel(nn.Module):
         transformer_model: str,
         vocab: Vocabulary,
         label_dim: int = 64,
-        hidden_dims: list = None,
+        hidden_dims: Optional[List[int]] = None,
         max_decoding_spans: int = 128,
         max_recursion_depth: int = 5,
     ):
@@ -267,7 +267,7 @@ class SpanFinderModel(nn.Module):
         self._vr_idx = vocab.get_token_index("VIRTUAL_ROOT", "span_label")
 
     @classmethod
-    def from_config(cls, config: dict, vocab: Vocabulary) -> "SpanFinderModel":
+    def from_config(cls, config: Dict, vocab: Vocabulary) -> "SpanFinderModel":
         """Create model from AllenNLP config."""
         model_config = config.get("model", config)
 
