@@ -1,0 +1,86 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "span-finder"
+version = "1.0.0"
+description = "SpanFinder: Parse sentences by finding & labeling spans"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+authors = [
+    {name = "Guanghui Qin"},
+]
+maintainers = [
+    {name = "Guanghui Qin"},
+]
+keywords = ["nlp", "span-labeling", "semantic-parsing", "frame-semantics", "pytorch"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Linguistic",
+]
+requires-python = ">=3.14"
+dependencies = [
+    "torch>=2.9.1",
+    "transformers>=4.45.0",
+    "numpy>=2.0.0",
+    "allennlp>=2.10.1",
+    "allennlp-models>=2.10.1",
+    "spacy>=3.8.0",
+    "tqdm",
+    "pandas>=2.2.0",
+    "scipy>=1.14.0",
+    "cached-path>=1.6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+concrete = [
+    "concrete",
+]
+all = [
+    "span-finder[dev,concrete]",
+]
+
+[project.urls]
+Homepage = "https://github.com/anthropics/span-finder"
+Documentation = "https://github.com/anthropics/span-finder#readme"
+Repository = "https://github.com/anthropics/span-finder"
+Issues = "https://github.com/anthropics/span-finder/issues"
+
+[project.scripts]
+span-finder = "sftp.cli:main"
+
+[tool.setuptools]
+packages = ["sftp", "sftp.data_reader", "sftp.data_reader.batch_sampler", "sftp.metrics", "sftp.models", "sftp.modules", "sftp.modules.span_extractor", "sftp.modules.span_finder", "sftp.modules.span_typing", "sftp.predictor", "sftp.training", "sftp.utils"]
+
+[tool.setuptools.package-data]
+"*" = ["*.json", "*.txt"]
+
+[tool.black]
+line-length = 100
+target-version = ["py314"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

@@ -1,3 +1,5 @@
+__version__ = "1.0.0"
+
 from .data_reader import (
     BetterDatasetReader, SRLDatasetReader
 )
@@ -55,6 +57,8 @@ def load_model(
 
 
 __all__ = [
+    # Version
+    "__version__",
     # Main API
     "load_model",
     "SpanPredictor",

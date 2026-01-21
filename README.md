@@ -9,29 +9,37 @@ Parse sentences by finding & labeling spans.
 
 ## Installation
 
-### Using pip
+### Install from PyPI (recommended)
 
 ```shell
-pip install -r requirements.txt
+pip install span-finder
 ```
 
-### Using conda (recommended for GPU support)
+### Install from source
+
+```shell
+# Clone the repository
+git clone https://github.com/your-username/span-finder.git
+cd span-finder
+
+# Install in development mode
+pip install -e .
+
+# Or install with all optional dependencies
+pip install -e ".[all]"
+```
+
+### Install with GPU support (conda)
 
 ```shell
 conda create -n spanfinder python=3.14
 conda activate spanfinder
 
-# For GPU support (CUDA 12.x)
+# Install PyTorch with CUDA support first
 pip install torch>=2.9.1 --index-url https://download.pytorch.org/whl/cu124
 
-# Install remaining dependencies
-pip install -r requirements.txt
-```
-
-### Install as a package
-
-```shell
-pip install -e .
+# Then install span-finder
+pip install span-finder
 ```
 
 ## Quick Start
@@ -201,6 +209,30 @@ Predict spans on multiple sentences efficiently.
 - `progress` (bool): Show progress bar. Default: False.
 
 **Returns:** List of `PredictionReturn` objects.
+
+## Command-Line Interface
+
+SpanFinder also provides a CLI for quick predictions:
+
+```shell
+# Predict on a sentence
+span-finder predict "Bob saw Alice eating an apple."
+
+# Use GPU
+span-finder predict "Bob saw Alice eating an apple." --device cuda
+
+# Output as JSON
+span-finder predict "Bob saw Alice eating an apple." --format json
+
+# Use a custom model
+span-finder predict "Bob saw Alice eating an apple." -m /path/to/model.tar.gz
+
+# Read from stdin
+echo "The cat sat on the mat." | span-finder predict
+
+# Check version
+span-finder --version
+```
 
 ## Demo
 
