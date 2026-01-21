@@ -240,10 +240,25 @@ A demo (combined with Patrick's coref model) is available at [nlp.jhu.edu/demos/
 
 ## Training
 
-For training, refer to the documentation:
+**Note:** Training requires AllenNLP, which is pinned to older PyTorch versions (< 1.13).
+For training, you'll need a separate environment with compatible versions:
+
+```shell
+# Create a training environment with older PyTorch
+pip install "span-finder[training]"
+
+# Or install AllenNLP separately
+pip install allennlp==2.10.1 allennlp-models==2.10.1
+```
+
+For training documentation, refer to:
 - [Overall document](docs/overall.md)
 - [Data format](docs/data.md)
 - [Training guide](docs/training.md)
+
+**Inference vs Training:**
+- **Inference** (default): Works with PyTorch 2.9.1+ and Python 3.14+. Just `pip install span-finder`.
+- **Training**: Requires AllenNLP with PyTorch < 1.13. Use `pip install "span-finder[training]"` in a compatible environment.
 
 ## Citation
 

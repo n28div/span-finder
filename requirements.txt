@@ -4,16 +4,12 @@ transformers>=4.45.0
 numpy>=2.0.0
 pandas>=2.2.0
 tqdm
-nltk
-flask
 scipy>=1.14.0
 spacy>=3.8.0
 
-# AllenNLP dependencies (for model loading/saving)
-# Note: AllenNLP was archived but we include compatible forks/alternatives
-allennlp>=2.10.1
-allennlp-models>=2.10.1
-cached-path>=1.6.0
+# Optional: for training (requires AllenNLP with older PyTorch)
+# allennlp>=2.10.1
+# allennlp-models>=2.10.1
 
 # Optional: for concrete format support
-concrete
+# concrete
