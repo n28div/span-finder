@@ -1,7 +1,6 @@
 import torch
 from torch import nn
-from torch.nn import KLDivLoss
-from torch.nn import LogSoftmax
+import torch.nn.functional as F
 
 
 class LabelSmoothingLoss(nn.Module):
@@ -10,15 +9,12 @@ class LabelSmoothingLoss(nn.Module):
         If label_smoothing == 0.0, it is equivalent to xentropy
         """
         assert 0.0 <= label_smoothing <= 1.0
-        super(LabelSmoothingLoss, self).__init__()
+        super().__init__()
 
         self.ignore_index = ignore_index
         self.label_smoothing = label_smoothing
-
-        self.loss_fn = KLDivLoss(reduction='batchmean')
         self.unreliable_label = unreliable_label
         self.max_gap = 100.
-        self.log_softmax = LogSoftmax(1)
 
     def forward(self, output, target):
         """
@@ -28,7 +24,7 @@ class LabelSmoothingLoss(nn.Module):
         vocab_size = output.shape[1]
         mask = (target != self.ignore_index)
         output, target = output[mask], target[mask]
-        output = self.log_softmax(output)
+        log_probs = F.log_softmax(output, dim=1)
 
         def get_smooth_prob(ls):
             smoothing_value = ls / (vocab_size - 1)
@@ -44,5 +40,6 @@ class LabelSmoothingLoss(nn.Module):
         else:
             model_prob = get_smooth_prob(self.label_smoothing)
 
-        loss = self.loss_fn(output, model_prob)
+        # Use reduction='none' and manual mean for PyTorch 2.x compatibility
+        loss = F.kl_div(log_probs, model_prob, reduction='batchmean')
         return loss

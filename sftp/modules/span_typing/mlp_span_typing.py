@@ -1,7 +1,7 @@
-from typing import *
+from typing import Dict, List, Optional
 
 import torch
-from torch.nn import CrossEntropyLoss, KLDivLoss, LogSoftmax
+import torch.nn.functional as F
 
 from .span_typing import SpanTyping
 
@@ -14,10 +14,10 @@ class MLPSpanTyping(SpanTyping):
     def __init__(
             self,
             input_dim: int,
-            hidden_dims: List[int],
+            hidden_dims: list[int],
             label_emb: torch.nn.Embedding,
             n_category: int,
-            label_to_ignore: Optional[List[int]] = None
+            label_to_ignore: list[int] | None = None
     ):
         """
         :param input_dim: dim(parent_span) + dim(child_span) + dim(label_dim)
@@ -40,9 +40,9 @@ class MLPSpanTyping(SpanTyping):
             self,
             span_vec: torch.Tensor,
             parent_at_span: torch.Tensor,
-            span_labels: Optional[torch.Tensor],
+            span_labels: torch.Tensor | None,
             prediction_only: bool = False,
-    ) -> Dict[str, torch.Tensor]:
+    ) -> dict[str, torch.Tensor]:
         """
         Inputs: All features for typing a child span.
         Process: Update the metric.
@@ -89,11 +89,14 @@ class MLPSpanTyping(SpanTyping):
 
         if is_soft:
             self.acc_metric(logits_for_prediction, span_labels.max(2)[1], ~span_labels.sum(2).isclose(torch.tensor(0.)))
-            ret['loss'] = KLDivLoss(reduction='sum')(LogSoftmax(dim=2)(logits), span_labels)
+            # Use reduction='none' and manual sum for PyTorch 2.x compatibility
+            log_probs = F.log_softmax(logits, dim=2)
+            ret['loss'] = F.kl_div(log_probs, span_labels, reduction='none').sum()
         else:
             for label_idx in self.label_to_ignore:
                 span_labels[span_labels == label_idx] = -100
             self.acc_metric(logits_for_prediction, span_labels, span_labels != -100)
-            ret['loss'] = CrossEntropyLoss(reduction='sum')(logits.flatten(0, 1), span_labels.flatten())
+            # Use reduction='none' and manual sum for PyTorch 2.x compatibility
+            ret['loss'] = F.cross_entropy(logits.flatten(0, 1), span_labels.flatten(), reduction='none').sum()
 
         return ret

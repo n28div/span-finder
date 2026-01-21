@@ -1,5 +1,5 @@
 import os
-from typing import *
+from typing import Callable, Dict, List, Optional, Type
 
 import torch
 from allennlp.common.from_params import Params, T, pop_and_construct_arg

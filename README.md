@@ -1,58 +1,221 @@
 # span-finder
-Parse sentences by finding &amp; labeling spans
+
+Parse sentences by finding & labeling spans.
+
+## Requirements
+
+- Python 3.14+
+- PyTorch 2.9.1+
 
 ## Installation
 
-Environment:
-- python 3.8
-- python-pip
-
-Suppose you are using Anaconda, you can create such an environment
+### Using pip
 
 ```shell
-conda create -n spanfinder python=3.8
+pip install -r requirements.txt
+```
+
+### Using conda (recommended for GPU support)
+
+```shell
+conda create -n spanfinder python=3.14
 conda activate spanfinder
+
+# For GPU support (CUDA 12.x)
+pip install torch>=2.9.1 --index-url https://download.pytorch.org/whl/cu124
+
+# Install remaining dependencies
+pip install -r requirements.txt
 ```
 
-If you have CUDA devices, run the following line
+### Install as a package
+
 ```shell
-conda install pytorch==1.11.0 torchvision==0.12.0 torchaudio==0.11.0 cudatoolkit=11.3 -c pytorch
+pip install -e .
 ```
 
-To install the dependencies, execute
+## Quick Start
 
-``` shell
-pip3 install -r requirements.txt
+The simplest way to use SpanFinder is through the `load_model` function:
+
+```python
+from sftp import load_model
+
+# Load model on CPU
+predictor = load_model(device="cpu")
+
+# Or load on GPU
+predictor = load_model(device="cuda")
+
+# Predict spans on a sentence
+result = predictor.predict_sentence("Bob saw Alice eating an apple.")
+
+# Print the parse tree
+result.span.tree(result.sentence)
 ```
 
-
-Optionally, you may install the package via
-``` shell
-python3 setup.py install
+Output:
 ```
-and import span-finder with `import sftp`.
+<Span Annotation: 3 descendents>
+  <Span: (saw), Perception_active, 2 children>
+    [Span: (Bob), Perceiver_agentive]
+    [Span: (Alice eating an apple), Phenomenon]
+  <Span: (eating), Ingestion, 2 children>
+    [Span: (Alice), Ingestor]
+    [Span: (an apple), Ingestibles]
+```
+
+## Usage Examples
+
+### Single Sentence Prediction
+
+```python
+from sftp import load_model
+
+# Load the model (downloads pretrained FrameNet model by default)
+predictor = load_model(device="cpu")
+
+# Predict on a string (will be tokenized automatically)
+result = predictor.predict_sentence("The cat sat on the mat.")
+result.span.tree(result.sentence)
+
+# Predict on pre-tokenized input
+tokens = ["The", "cat", "sat", "on", "the", "mat", "."]
+result = predictor.predict_sentence(tokens)
+result.span.tree(result.sentence)
+```
+
+### Batch Prediction
+
+```python
+from sftp import load_model
+
+predictor = load_model(device="cuda")
+
+sentences = [
+    "Bob saw Alice eating an apple.",
+    "The quick brown fox jumps over the lazy dog.",
+    "She sells seashells by the seashore.",
+]
+
+# Process multiple sentences efficiently
+results = predictor.predict_batch_sentences(
+    sentences,
+    max_tokens=512,  # Maximum tokens per batch
+    progress=True,   # Show progress bar
+)
+
+for result in results:
+    print(f"Sentence: {' '.join(result.sentence)}")
+    result.span.tree(result.sentence)
+    print("-" * 40)
+```
+
+### Using a Custom Model
+
+```python
+from sftp import load_model
+
+# Load from a local path
+predictor = load_model(
+    model_path="/path/to/your/model.tar.gz",
+    device="cuda:0"
+)
+
+# Or from a URL
+predictor = load_model(
+    model_path="https://example.com/model.tar.gz",
+    device="cpu"
+)
+```
+
+### Accessing Prediction Results
+
+```python
+from sftp import load_model
+
+predictor = load_model(device="cpu")
+result = predictor.predict_sentence("Bob saw Alice eating an apple.")
+
+# Access the span tree
+span = result.span
+
+# Get JSON representation
+json_output = span.to_json()
+print(json_output)
+
+# Iterate over top-level spans (events/frames)
+for event in span:
+    print(f"Event: {event.label} at ({event.start_idx}, {event.end_idx})")
+
+    # Iterate over arguments
+    for arg in event:
+        print(f"  Argument: {arg.label} at ({arg.start_idx}, {arg.end_idx})")
+```
+
+### Performance Optimization
+
+```python
+from sftp import load_model
+
+predictor = load_model(device="cuda")
+
+# Limit decoding depth and spans for faster inference
+predictor.economize(
+    max_decoding_spans=20,    # Limit number of predicted spans
+    max_recursion_depth=2,    # Limit tree depth
+)
+
+result = predictor.predict_sentence("A complex sentence with many possible frames.")
+```
+
+## API Reference
+
+### `load_model(model_path, device)`
+
+Load a SpanFinder model for inference.
+
+**Parameters:**
+- `model_path` (str): Path to model checkpoint. Can be a URL, local `.tar.gz` file, or extracted directory. Default: FrameNet 1.7 pretrained model.
+- `device` (str): Device to run on. Options: `"cpu"`, `"cuda"`, `"cuda:0"`, `"cuda:1"`, etc. Default: `"cpu"`.
+
+**Returns:** `SpanPredictor` instance.
+
+### `SpanPredictor.predict_sentence(sentence, output_format)`
+
+Predict spans on a single sentence.
+
+**Parameters:**
+- `sentence` (str | list[str]): Input sentence as string or list of tokens.
+- `output_format` (str): Output format - `"span"`, `"json"`, or `"concrete"`. Default: `"span"`.
+
+**Returns:** `PredictionReturn` with `.span`, `.sentence`, and `.meta` attributes.
+
+### `SpanPredictor.predict_batch_sentences(sentences, max_tokens, progress)`
+
+Predict spans on multiple sentences efficiently.
+
+**Parameters:**
+- `sentences` (list): List of sentences.
+- `max_tokens` (int): Maximum tokens per batch. Default: 512.
+- `progress` (bool): Show progress bar. Default: False.
+
+**Returns:** List of `PredictionReturn` objects.
 
 ## Demo
 
-A demo (combined with Patrick's coref model) is [here](https://nlp.jhu.edu/demos/lome).
-
-## Inference Only
-
-If you use SpanFinder only for inference, we provide a checkpoint that was trained on FrameNet v1.7.
-[This example](scripts/predict_span.py) shows the basic API of SpanFinder.
-Note that the script will incur a checkpoint download everytime, so the best way is to
-download [the checkpoint](https://gqin.top/sftp-fn) to local (~1.7GiB), or better extract it out, 
-and then point the `-m` argument to the archived file or extracted folder.
-
+A demo (combined with Patrick's coref model) is available at [nlp.jhu.edu/demos/lome](https://nlp.jhu.edu/demos/lome).
 
 ## Training
 
-For training, you may need to read [an overall document](docs/overall.md),
-[the doc for data](docs/data.md), and [the doc for training](docs/training.md).
+For training, refer to the documentation:
+- [Overall document](docs/overall.md)
+- [Data format](docs/data.md)
+- [Training guide](docs/training.md)
 
-## Paper
+## Citation
 
-Welcome to cite our work if you found it useful:
+If you find this work useful, please cite:
 
 ```bibtex
 @inproceedings{xia-etal-2021-lome,

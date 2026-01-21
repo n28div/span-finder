@@ -1,6 +1,6 @@
 import os
 from time import time
-from typing import *
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 import json
 
 import numpy as np
@@ -355,12 +355,14 @@ class SpanPredictor(Predictor):
         if file_path is None:
             return None
         if file_path.endswith('.json'):
-            return json.load(open(file_path))
+            with open(file_path, encoding='utf-8') as f:
+                return json.load(f)
         mapping = dict()
-        for line in open(file_path).readlines():
-            parent_label, original_label, new_label = line.replace('\n', '').split('\t')
-            if parent_label == '*':
-                mapping[original_label] = new_label
-            else:
-                mapping[(parent_label, original_label)] = new_label
+        with open(file_path, encoding='utf-8') as f:
+            for line in f:
+                parent_label, original_label, new_label = line.rstrip('\n').split('\t')
+                if parent_label == '*':
+                    mapping[original_label] = new_label
+                else:
+                    mapping[(parent_label, original_label)] = new_label
         return mapping

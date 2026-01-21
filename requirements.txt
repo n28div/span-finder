@@ -1,14 +1,19 @@
-allennlp==2.9.3
-allennlp-models==2.9.3
-transformers==4.18.0
-numpy==1.21.0
-torch==1.11.0
-pandas==1.3.0
+# Core dependencies for Python 3.14 and PyTorch 2.9.1
+torch>=2.9.1
+transformers>=4.45.0
+numpy>=2.0.0
+pandas>=2.2.0
 tqdm
 nltk
-concrete
 flask
-scipy
-cached-path==1.1.2
-spacy==3.2.6
-charset-normalizer==3.3.2
+scipy>=1.14.0
+spacy>=3.8.0
+
+# AllenNLP dependencies (for model loading/saving)
+# Note: AllenNLP was archived but we include compatible forks/alternatives
+allennlp>=2.10.1
+allennlp-models>=2.10.1
+cached-path>=1.6.0
+
+# Optional: for concrete format support
+concrete

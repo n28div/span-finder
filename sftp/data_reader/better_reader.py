@@ -1,8 +1,8 @@
 import json
 import logging
 import os
-from collections import defaultdict, namedtuple
-from typing import *
+from collections import defaultdict
+from typing import Dict, Iterable, List, NamedTuple
 
 from allennlp.data.dataset_readers.dataset_reader import DatasetReader
 from allennlp.data.instance import Instance
@@ -10,14 +10,13 @@ from allennlp.data.instance import Instance
 from .span_reader import SpanReader
 from ..utils import Span
 
-# logging.basicConfig(level=logging.DEBUG)
-
-# for v in logging.Logger.manager.loggerDict.values():
-# v.disabled = True
-
 logger = logging.getLogger(__name__)
 
-SpanTuple = namedtuple('Span', ['start', 'end'])
+
+class SpanTuple(NamedTuple):
+    """A named tuple representing a span with start and end indices."""
+    start: int
+    end: int
 
 
 @DatasetReader.register('better')
@@ -94,8 +93,8 @@ class BetterDatasetReader(SpanReader):
         spans = [(span['start'], -len(span['string']), ix, span) for ix, span in enumerate(spans)]
         try:
             return [s[-1] for s in sorted(spans)]
-        except:
-            breakpoint()
+        except (TypeError, KeyError) as e:
+            raise ValueError(f"Error sorting spans: {e}") from e
 
     @staticmethod
     def _get_longest_span(spans):
@@ -110,7 +109,7 @@ class BetterDatasetReader(SpanReader):
             try:
                 if token == pattern[0] and text[i:i + pattern_length] == pattern:
                     matches.append(SpanTuple(start=i, end=i + pattern_length - 1))  # inclusive boundaries
-            except:
+            except (IndexError, TypeError):
                 continue
         return matches
 

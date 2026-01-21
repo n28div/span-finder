@@ -1,12 +1,12 @@
 import logging
 from abc import ABC
-from typing import *
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from allennlp.common.util import END_SYMBOL
 from allennlp.data.dataset_readers.dataset_reader import DatasetReader
 from allennlp.data.dataset_readers.dataset_utils.span_utils import bio_tags_to_spans
-from allennlp.data.fields import *
+from allennlp.data.fields import ArrayField, Field, LabelField, ListField, MetadataField, TextField
 from allennlp.data.token_indexers import PretrainedTransformerIndexer
 from allennlp.data.tokenizers import PretrainedTransformerTokenizer, Token
 

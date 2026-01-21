@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import *
+from typing import Callable, Dict, Optional
 
 import torch
 from allennlp.common import Registrable

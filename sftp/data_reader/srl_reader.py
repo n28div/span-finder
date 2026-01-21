@@ -1,7 +1,7 @@
 import json
 import logging
 import random
-from typing import *
+from typing import Iterable, Optional
 
 import numpy as np
 from allennlp.data.dataset_readers.dataset_reader import DatasetReader
@@ -37,7 +37,8 @@ class SRLDatasetReader(SpanReader):
         self.arg_smooth_factor = arg_smoothing_factor
         self.ontology_mapping = None
         if ontology_mapping_path is not None:
-            self.ontology_mapping = json.load(open(ontology_mapping_path))
+            with open(ontology_mapping_path, encoding='utf-8') as f:
+                self.ontology_mapping = json.load(f)
             for k1 in ['event', 'argument']:
                 for k2, weights in self.ontology_mapping['mapping'][k1].items():
                     weights = np.array(weights)
@@ -52,7 +53,8 @@ class SRLDatasetReader(SpanReader):
             self.ontology_mapping['mapping']['event'][VIRTUAL_ROOT] = np.array(vr_label)
 
     def _read(self, file_path: str) -> Iterable[Instance]:
-        all_lines = list(map(json.loads, open(file_path).readlines()))
+        with open(file_path, encoding='utf-8') as f:
+            all_lines = list(map(json.loads, f.readlines()))
         if self.debug:
             random.seed(1); random.shuffle(all_lines)
         for line in all_lines:

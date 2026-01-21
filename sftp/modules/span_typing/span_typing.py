@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import *
+from typing import Dict, List, Optional
 
 import torch
 from allennlp.common import Registrable
@@ -28,14 +28,15 @@ class SpanTyping(Registrable, torch.nn.Module, ABC):
 
     def load_ontology(self, path: str, vocab: Vocabulary):
         unk_id = vocab.get_token_index(DEFAULT_OOV_TOKEN, 'span_label')
-        for line in open(path).readlines():
-            entities = [vocab.get_token_index(ent, 'span_label') for ent in line.replace('\n', '').split('\t')]
-            parent, children = entities[0], entities[1:]
-            if parent == unk_id:
-                continue
-            self.onto[parent, :] = False
-            children = list(filter(lambda x: x != unk_id, children))
-            self.onto[parent, children] = True
+        with open(path, encoding='utf-8') as f:
+            for line in f:
+                entities = [vocab.get_token_index(ent, 'span_label') for ent in line.rstrip('\n').split('\t')]
+                parent, children = entities[0], entities[1:]
+                if parent == unk_id:
+                    continue
+                self.onto[parent, :] = False
+                children = list(filter(lambda x: x != unk_id, children))
+                self.onto[parent, children] = True
         self.register_buffer('ontology', self.onto)
 
     def forward(
