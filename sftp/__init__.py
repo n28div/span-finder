@@ -5,5 +5,6 @@ from .modules import (
     MLPSpanTyping, SpanTyping, SpanFinder, BIOSpanFinder
 )
 from .predictor import SpanPredictor
+from .predictor.span_predictor import framenet_ontology
 from .utils import Span
 from .hf_model import SpanFinderHF

@@ -86,6 +86,7 @@ class SpanFinderHF:
         *,
         tokens: Optional[List[str]] = None,
         ontology_mapping=None,
+        use_framenet: bool = True,
         output_format: str = "span",
     ):
         """
@@ -95,8 +96,19 @@ class SpanFinderHF:
         - ``text="…"``   — raw string, tokenized internally with SpacyTokenizer.
         - ``tokens=[…]`` — already word-tokenized list, skips SpacyTokenizer.
 
+        Args:
+            use_framenet: If True, restrict predictions to known FrameNet 1.7 frames
+                and their valid frame elements, dropping anything outside the ontology.
+                Downloaded from NLTK on first use and cached.
+            ontology_mapping: Custom mapping dict; ignored when use_framenet=True.
+
         Returns a :class:`~sftp.predictor.span_predictor.PredictionReturn` named-tuple.
         """
+        if use_framenet:
+            from .predictor.span_predictor import framenet_ontology
+
+            ontology_mapping = framenet_ontology()
+
         pred = self._predictor.predict_sentence(
             tokens=tokens,
             ontology_mapping=ontology_mapping,
@@ -111,6 +123,7 @@ class SpanFinderHF:
         tokens: Optional[List[List[str]]] = None,
         max_tokens: int = 512,
         ontology_mapping=None,
+        use_framenet: bool = True,
         output_format: str = "span",
         progress: bool = False,
     ):
@@ -121,8 +134,19 @@ class SpanFinderHF:
         - ``texts=[…]``    — list of raw strings.
         - ``tokens=[[…]]`` — list of pre-tokenized token lists.
 
+        Args:
+            use_framenet: If True, restrict predictions to known FrameNet 1.7 frames
+                and their valid frame elements, dropping anything outside the ontology.
+                Downloaded from NLTK on first use and cached.
+            ontology_mapping: Custom mapping dict; ignored when use_framenet=True.
+
         Returns a list of :class:`~sftp.predictor.span_predictor.PredictionReturn`.
         """
+        if use_framenet:
+            from .predictor.span_predictor import framenet_ontology
+
+            ontology_mapping = framenet_ontology()
+
         preds = self._predictor.predict_batch_sentences(
             tokens=tokens,
             max_tokens=max_tokens,
@@ -132,7 +156,7 @@ class SpanFinderHF:
         )
 
         return [
-            {"tokens": tokens, "frames": span_tree_to_frames(p.span, t)}
+            {"tokens": t, "frames": span_tree_to_frames(p.span, t)}
             for t, p in zip(tokens, preds)
         ]
 

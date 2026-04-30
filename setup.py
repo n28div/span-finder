@@ -14,6 +14,7 @@ setup(
         "numpy>=1.21.0",
         "scipy",
         "tqdm",
+        "nltk",
         "cached-path>=1.1.0",
         "charset-normalizer",
         "huggingface_hub>=0.9.0",

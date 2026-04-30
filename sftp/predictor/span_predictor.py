@@ -1,4 +1,5 @@
 from typing import *
+import functools
 import json
 
 import numpy as np
@@ -14,6 +15,30 @@ from allennlp.predictors import Predictor
 from tqdm import tqdm
 
 from ..utils import Span, re_index_span, VIRTUAL_ROOT
+
+
+@functools.lru_cache(maxsize=1)
+def framenet_ontology() -> Dict[Union[str, Tuple[str, str]], str]:
+    """
+    Build an ontology mapping from NLTK FrameNet 1.7.
+
+    The returned dict can be passed directly as ``ontology_mapping`` to
+    ``predict_sentence`` / ``predict_batch_sentences`` / ``SpanFinderHF.predict``.
+    It keeps only predicted spans whose frame label is a known FrameNet frame,
+    and only role spans whose FE name is valid for the predicted parent frame.
+
+    Downloaded on first call; cached for the lifetime of the process.
+    """
+    import nltk
+    nltk.download("framenet_v17", quiet=True)
+    from nltk.corpus import framenet as fn
+
+    mapping: Dict[Union[str, Tuple[str, str]], str] = {}
+    for frame in fn.frames():
+        mapping[frame.name] = frame.name
+        for fe_name in frame.FE:
+            mapping[(frame.name, fe_name)] = fe_name
+    return mapping
 
 
 def _resolve_single_input(
