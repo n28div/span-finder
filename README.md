@@ -1,58 +1,75 @@
 # span-finder
-Parse sentences by finding &amp; labeling spans
+
+Hierarchical span finder and semantic role labeler trained on FrameNet 1.7.
+
+Originally from [https://github.com/hiaoxui/span-finder](https://github.com/hiaoxui/span-finder). This fork adds HuggingFace Hub support so the model can be loaded directly with `from_pretrained`.
 
 ## Installation
 
-Environment:
-- python 3.8
-- python-pip
-
-Suppose you are using Anaconda, you can create such an environment
-
 ```shell
-conda create -n spanfinder python=3.8
-conda activate spanfinder
+pip install git+https://github.com/n28div/span-finder.git
 ```
 
-If you have CUDA devices, run the following line
-```shell
-conda install pytorch==1.11.0 torchvision==0.12.0 torchaudio==0.11.0 cudatoolkit=11.3 -c pytorch
+## Usage
+
+```python
+from sftp import SpanFinderHF
+
+# load from HuggingFace Hub or a local directory
+model = SpanFinderHF.from_pretrained("n28div/lome-spanfinder")
+
+# single sentence (pre-tokenized)
+result = model.predict(tokens=["John", "gave", "Mary", "a", "book", "."])
+
+# batch
+results = model.predict_batch(tokens=[
+    ["John", "gave", "Mary", "a", "book", "."],
+    ["She", "left", "the", "room", "."],
+])
 ```
 
-To install the dependencies, execute
+### Output format
 
-``` shell
-pip3 install -r requirements.txt
+Each call returns a dict (or list of dicts for batches):
+
+```python
+{
+    "tokens": ["John", "gave", "Mary", "a", "book", "."],
+    "frames": [
+        {
+            "name": "Giving",          # FrameNet frame label
+            "idxs": [1, 1],            # [start, end] token indices of the trigger, inclusive
+            "activation": "gave",      # trigger text
+            "roles": [
+                {
+                    "name": "Donor",           # frame element label
+                    "filler": "John",          # text span filling the role
+                    "idxs": [0, 0]             # [start, end] token indices, inclusive
+                },
+                {
+                    "name": "Recipient",
+                    "filler": "Mary",
+                    "idxs": [2, 2]
+                },
+                {
+                    "name": "Theme",
+                    "filler": "a book",
+                    "idxs": [3, 4]
+                }
+            ]
+        }
+    ]
+}
 ```
 
+`frames` is a flat list — one entry per detected event in the sentence. Each frame has a trigger span (`idxs`, `activation`) and a list of role-filler pairs. All indices are token-level and inclusive on both ends.
 
-Optionally, you may install the package via
-``` shell
-python3 setup.py install
-```
-and import span-finder with `import sftp`.
-
-## Demo
-
-A demo (combined with Patrick's coref model) is [here](https://nlp.jhu.edu/demos/lome).
-
-## Inference Only
-
-If you use SpanFinder only for inference, we provide a checkpoint that was trained on FrameNet v1.7.
-[This example](scripts/predict_span.py) shows the basic API of SpanFinder.
-Note that the script will incur a checkpoint download everytime, so the best way is to
-download [the checkpoint](https://gqin.top/sftp-fn) to local (~1.7GiB), or better extract it out, 
-and then point the `-m` argument to the archived file or extracted folder.
+By default predictions are filtered to FrameNet 1.7 frames and their valid frame elements. Pass `use_framenet=False` to get the raw model output instead.
 
 
-## Training
+## Citation
 
-For training, you may need to read [an overall document](docs/overall.md),
-[the doc for data](docs/data.md), and [the doc for training](docs/training.md).
-
-## Paper
-
-Welcome to cite our work if you found it useful:
+If you use this model for your research, please cite the original paper:
 
 ```bibtex
 @inproceedings{xia-etal-2021-lome,
