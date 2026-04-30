@@ -16,64 +16,12 @@ class TransformerOptimizer:
     This is used to fine-tune the pretrained transformer with some layers fixed and different learning rate.
     When some layers are fixed, the wrapper will set the `require_grad` flag as  False, which could save
     training time and optimize memory usage.
-    Plz contact Guanghui Qin for bugs.
     Params:
         base: base optimizer.
         embeddings_lr: learning rate for embedding layer. Set as 0.0 to fix it.
         encoder_lr: learning rate for encoder layer. Set as 0.0 to fix it.
         pooler_lr: learning rate for pooler layer. Set as 0.0 to fix it.
         layer_fix: the number of encoder layers that should be fixed.
-
-    Example json config:
-
-    1. No-op. Do nothing (why do you use me?)
-    optimizer: {
-        type: "transformer",
-        base: {
-            type: "adam",
-            lr: 0.001
-        }
-    }
-
-    2. Fix everything in the transformer.
-    optimizer: {
-        type: "transformer",
-        base: {
-            type: "adam",
-            lr: 0.001
-        },
-        embeddings_lr: 0.0,
-        encoder_lr: 0.0,
-        pooler_lr: 0.0
-    }
-
-    Or equivalently (suppose we have 24 layers)
-
-    optimizer: {
-        type: "transformer",
-        base: {
-            type: "adam",
-            lr: 0.001
-        },
-        embeddings_lr: 0.0,
-        layer_fix: 24,
-        pooler_lr: 0.0
-    }
-
-    3. Fix embeddings and the lower 12 encoder layers, set a small learning rate
-       for the other parts of the transformer
-
-    optimizer: {
-        type: "transformer",
-        base: {
-            type: "adam",
-            lr: 0.001
-        },
-        embeddings_lr: 0.0,
-        layer_fix: 12,
-        encoder_lr: 1e-5,
-        pooler_lr: 1e-5
-    }
     """
     @classmethod
     def from_params(

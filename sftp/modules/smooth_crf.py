@@ -19,7 +19,7 @@ class SmoothCRF(ConditionalRandomField):
             return super(SmoothCRF, self).forward(inputs, tags, mask)
 
         # smooth mode
-        log_denominator = self._input_likelihood(inputs, mask)
+        log_denominator = self._input_likelihood(inputs, self.transitions, mask)
         log_numerator = self._smooth_joint_likelihood(inputs, tags, mask)
 
         return torch.sum(log_numerator - log_denominator)

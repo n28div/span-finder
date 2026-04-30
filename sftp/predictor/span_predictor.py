@@ -1,5 +1,3 @@
-import os
-from time import time
 from typing import *
 import json
 
@@ -13,20 +11,39 @@ from allennlp.data.tokenizers import SpacyTokenizer
 from allennlp.models import Model
 from allennlp.nn import util as nn_util
 from allennlp.predictors import Predictor
-from concrete import (
-    MentionArgument, SituationMentionSet, SituationMention, TokenRefSequence,
-    EntityMention, EntityMentionSet, Entity, EntitySet, AnnotationMetadata, Communication
-)
-from concrete.util import CommunicationReader, AnalyticUUIDGeneratorFactory, CommunicationWriterZip
-from concrete.validate import validate_communication
 from tqdm import tqdm
 
-from ..data_reader import concrete_doc, concrete_doc_tokenized
 from ..utils import Span, re_index_span, VIRTUAL_ROOT
 
 
+def _resolve_single_input(
+        sentence: Union[str, List[str], None],
+        text: Optional[str],
+        tokens: Optional[List[str]],
+) -> Union[str, List[str]]:
+    provided = {k: v for k, v in [("sentence", sentence), ("text", text), ("tokens", tokens)] if v is not None}
+    if len(provided) != 1:
+        raise ValueError(
+            f"Provide exactly one of: sentence (positional), text=, or tokens=. Got: {list(provided)}"
+        )
+    return next(iter(provided.values()))
+
+
+def _resolve_batch_input(
+        sentences: Union[List[Union[str, List[str]]], None],
+        texts: Optional[List[str]],
+        tokens: Optional[List[List[str]]],
+) -> List[Union[str, List[str]]]:
+    provided = {k: v for k, v in [("sentences", sentences), ("texts", texts), ("tokens", tokens)] if v is not None}
+    if len(provided) != 1:
+        raise ValueError(
+            f"Provide exactly one of: sentences (positional), texts=, or tokens=. Got: {list(provided)}"
+        )
+    return next(iter(provided.values()))
+
+
 class PredictionReturn(NamedTuple):
-    span: Union[Span, dict, Communication]
+    span: Union[Span, dict]
     sentence: List[str]
     meta: Dict[str, Any]
 
@@ -51,101 +68,29 @@ class SpanPredictor(Predictor):
             if isinstance(prediction, list):
                 return [SpanPredictor.format_convert(sent, pred, 'json') for sent, pred in zip(sentence, prediction)]
             return prediction.to_json()
-        elif output_format == 'concrete':
-            if isinstance(prediction, Span):
-                sentence, prediction = [sentence], [prediction]
-            return concrete_doc_tokenized(sentence, prediction)
-
-    def predict_concrete(
-            self,
-            concrete_path: str,
-            output_path: Optional[str] = None,
-            max_tokens: int = 2048,
-            ontology_mapping: Optional[Dict[str, str]] = None,
-    ):
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        writer = CommunicationWriterZip(output_path)
-
-        for comm, fn in CommunicationReader(concrete_path):
-            assert len(comm.sectionList) == 1
-            concrete_sentences = comm.sectionList[0].sentenceList
-            json_sentences = list()
-            for con_sent in concrete_sentences:
-                json_sentences.append(
-                    [t.text for t in con_sent.tokenization.tokenList.tokenList]
-                )
-            predictions = self.predict_batch_sentences(json_sentences, max_tokens, ontology_mapping=ontology_mapping)
-
-            # Merge predictions into concrete
-            aug = AnalyticUUIDGeneratorFactory(comm).create()
-            situation_mention_set = SituationMentionSet(next(aug), AnnotationMetadata('Span Finder', time()), list())
-            comm.situationMentionSetList = [situation_mention_set]
-            situation_mention_set.mentionList = sm_list = list()
-            entity_mention_set = EntityMentionSet(next(aug), AnnotationMetadata('Span Finder', time()), list())
-            comm.entityMentionSetList = [entity_mention_set]
-            entity_mention_set.mentionList = em_list = list()
-            entity_set = EntitySet(
-                next(aug), AnnotationMetadata('Span Finder', time()), list(), None, entity_mention_set.uuid
-            )
-            comm.entitySetList = [entity_set]
-
-            em_dict = dict()
-            for con_sent, pred in zip(concrete_sentences, predictions):
-                for event in pred.span:
-                    def raw_text_span(start_idx, end_idx, **_):
-                        si_char = con_sent.tokenization.tokenList.tokenList[start_idx].textSpan.start
-                        ei_char = con_sent.tokenization.tokenList.tokenList[end_idx].textSpan.ending
-                        return comm.text[si_char:ei_char]
-                    sm = SituationMention(
-                        next(aug),
-                        text=raw_text_span(event.start_idx, event.end_idx),
-                        situationKind=event.label,
-                        situationType='EVENT',
-                        confidence=event.confidence,
-                        argumentList=list(),
-                        tokens=TokenRefSequence(
-                            tokenIndexList=list(range(event.start_idx, event.end_idx+1)),
-                            tokenizationId=con_sent.tokenization.uuid
-                        )
-                    )
-
-                    for arg in event:
-                        em = em_dict.get((arg.start_idx, arg.end_idx + 1))
-                        if em is None:
-                            em = EntityMention(
-                                next(aug),
-                                tokens=TokenRefSequence(
-                                    tokenIndexList=list(range(arg.start_idx, arg.end_idx+1)),
-                                    tokenizationId=con_sent.tokenization.uuid,
-                                ),
-                                text=raw_text_span(arg.start_idx, arg.end_idx)
-                            )
-                            em_list.append(em)
-                            entity_set.entityList.append(Entity(next(aug), id=em.text, mentionIdList=[em.uuid]))
-                            em_dict[(arg.start_idx, arg.end_idx+1)] = em
-                        sm.argumentList.append(MentionArgument(
-                            role=arg.label,
-                            entityMentionId=em.uuid,
-                            confidence=arg.confidence
-                        ))
-                    sm_list.append(sm)
-            validate_communication(comm)
-            writer.write(comm, fn)
-        writer.close()
 
     def predict_sentence(
             self,
-            sentence: Union[str, List[str]],
+            sentence: Union[str, List[str], None] = None,
             ontology_mapping: Optional[Dict[str, str]] = None,
             output_format: str = 'span',
+            *,
+            text: Optional[str] = None,
+            tokens: Optional[List[str]] = None,
     ) -> PredictionReturn:
         """
-        Predict spans on a single sentence (no batch). If not tokenized, will tokenize it with SpacyTokenizer.
-        :param sentence: If tokenized, should be a list of tokens in string. If not, should be a string.
+        Predict spans on a single sentence (no batch).
+
+        Pass exactly one of the three inputs:
+        - ``sentence``: backward-compat positional arg (str or pre-tokenized list).
+        - ``text="…"``: raw text, tokenized internally with SpacyTokenizer.
+        - ``tokens=[…]``: already word-tokenized list, skips SpacyTokenizer.
+
         :param ontology_mapping:
         :param output_format: span, json or concrete.
         """
-        prediction = self.predict_json(self._prepare_sentence(sentence))
+        inp = _resolve_single_input(sentence, text, tokens)
+        prediction = self.predict_json(self._prepare_sentence(inp))
         prediction['prediction'] = self.format_convert(
             prediction['sentence'],
             Span.from_json(prediction['prediction']).map_ontology(ontology_mapping),
@@ -155,22 +100,31 @@ class SpanPredictor(Predictor):
 
     def predict_batch_sentences(
             self,
-            sentences: List[Union[List[str], str]],
+            sentences: Union[List[Union[List[str], str]], None] = None,
             max_tokens: int = 512,
             ontology_mapping: Optional[Dict[str, str]] = None,
             output_format: str = 'span',
             progress: bool = False,
+            *,
+            texts: Optional[List[str]] = None,
+            tokens: Optional[List[List[str]]] = None,
     ) -> List[PredictionReturn]:
         """
-        Predict spans on a batch of sentences. If not tokenized, will tokenize it with SpacyTokenizer.
-        :param sentences: A list of sentences. Refer to `predict_sentence`.
+        Predict spans on a batch of sentences.
+
+        Pass exactly one of the three inputs:
+        - ``sentences``: backward-compat positional arg (list of str or pre-tokenized lists).
+        - ``texts=[…]``: list of raw strings, each tokenized with SpacyTokenizer.
+        - ``tokens=[[…], …]``: list of already word-tokenized token lists.
+
         :param max_tokens: Maximum tokens in a batch.
         :param ontology_mapping: If not None, will try to map the output from one ontology to another.
             If the predicted frame is not in the mapping, the prediction will be ignored.
         :param output_format: span, json or concrete.
         :param progress: If True, the progress bar will be displayed.
-        :return: A list of predictions.
+        :return: A list of predictions in the same order as the input.
         """
+        sentences = _resolve_batch_input(sentences, texts, tokens)
         sentences = list(map(self._prepare_sentence, sentences))
         for i_sent, sent in enumerate(sentences):
             sent['meta'] = {"idx": i_sent}
@@ -246,31 +200,6 @@ class SpanPredictor(Predictor):
                 sentence = [""]
             sentence = list(map(str, self.spacy_tokenizer.tokenize(sentence)))
         return {"tokens": sentence}
-
-    @staticmethod
-    def json_to_concrete(
-            predictions: List[dict],
-    ):
-        sentences = list()
-        for pred in predictions:
-            tokenization, event = list(), list()
-            sent = {'text': ' '.join(pred['inputs']), 'tokenization': tokenization, 'event': event}
-            sentences.append(sent)
-            start_idx = 0
-            for token in pred['inputs']:
-                tokenization.append((start_idx, len(token)-1+start_idx))
-                start_idx += len(token) + 1
-            for pred_event in pred['prediction']:
-                arg_list = list()
-                one_event = {'argument': arg_list}
-                event.append(one_event)
-                for key in ['start_idx', 'end_idx', 'label']:
-                    one_event[key] = pred_event[key]
-                for pred_arg in pred_event['children']:
-                    arg_list.append({key: pred_arg[key] for key in ['start_idx', 'end_idx', 'label']})
-
-        concrete_comm = concrete_doc(sentences)
-        return concrete_comm
 
     def force_decode(
             self,
