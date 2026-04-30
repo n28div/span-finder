@@ -207,9 +207,6 @@ class SpanFinderHF:
         api.create_repo(
             repo_id=repo_id, private=private, repo_type="model", exist_ok=True
         )
-        api.create_repo(
-            repo_id=repo_id, private=private, repo_type="model", exist_ok=True
-        )
 
         with tempfile.TemporaryDirectory() as tmp:
             self._serialize(Path(tmp))
@@ -237,16 +234,12 @@ class SpanFinderHF:
         model.vocab.save_to_files(str(output_dir / "vocabulary"))
 
         # Config — must be present so Predictor.from_path can reconstruct the model
-        if self._model_dir is not None:
-            config_src = self._model_dir / "config.json"
-            if config_src.exists():
-                shutil.copy2(config_src, output_dir / "config.json")
-                return
-
-        raise RuntimeError(
-            "config.json not found. Load the model with from_pretrained() so "
-            "the source directory is tracked, or place config.json manually."
-        )
+        if self._model_dir is None or not (self._model_dir / "config.json").exists():
+            raise RuntimeError(
+                "config.json not found. Load the model with from_pretrained() so "
+                "the source directory is tracked, or place config.json manually."
+            )
+        shutil.copy2(self._model_dir / "config.json", output_dir / "config.json")
 
     @classmethod
     def save_pretrained(
