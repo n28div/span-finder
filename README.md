@@ -4,6 +4,8 @@ Hierarchical span finder and semantic role labeler trained on FrameNet 1.7.
 
 Originally from [https://github.com/hiaoxui/span-finder](https://github.com/hiaoxui/span-finder). This fork adds HuggingFace Hub support so the model can be loaded directly with `from_pretrained`.
 
+**Requires Python 3.8**.
+
 ## Installation
 
 ```shell
